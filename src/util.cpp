@@ -5,7 +5,7 @@ MovingAverage::MovingAverage() : sum(0), index(0), count(0) {
         window[i] = 0.0;
     }
 }
-float MovingAverage::addValue(float newValue) {
+float MovingAverage::addValue(double newValue) {
     // Subtract the old value from the sum
     sum -= window[index];
     

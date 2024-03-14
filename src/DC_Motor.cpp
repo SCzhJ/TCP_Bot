@@ -7,20 +7,17 @@ encoderBPin(encoderB), encoderValue(0) {
     pinMode(pwmPin, OUTPUT);
     pinMode(dirAPin, OUTPUT);
     pinMode(dirBPin, OUTPUT);
-    pinMode(encoderAPin, INPUT);
-    pinMode(encoderBPin, INPUT);
+    pinMode(encoderAPin, INPUT_PULLUP);
+    pinMode(encoderBPin, INPUT_PULLUP);
 }
 void DCMotor::setMotor(int analogSpeed){
-    if (analogSpeed > 0){
+    if (analogSpeed >= 0){
         setDirection(1);
         setSpeed(analogSpeed);
     }
-    else if (analogSpeed <= 0){
-        setDirection(-1);
-        setSpeed(analogSpeed);
-    }
     else{
-        setDirection(0);
+        setDirection(-1);
+        setSpeed(-analogSpeed);
     }
     
 }
@@ -28,8 +25,8 @@ void DCMotor::setSpeed(int analogSpeed) {
     if (analogSpeed < 0) {
         analogSpeed = 0;
     } 
-    else if (analogSpeed > 225) {
-        analogSpeed = 225;
+    else if (analogSpeed > 250) {
+        analogSpeed = 250;
     }
     analogWrite(pwmPin, analogSpeed);
 }

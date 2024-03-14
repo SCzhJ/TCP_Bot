@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define WINDOW_SIZE 4
+#define WINDOW_SIZE 3
 class MovingAverage {
 private:
     float window[WINDOW_SIZE];
@@ -12,7 +12,7 @@ private:
     int count; // Number of values added
 public:
     MovingAverage();
-    float addValue(float newValue);
+    float addValue(double newValue);
 };
 
 // Example usage:

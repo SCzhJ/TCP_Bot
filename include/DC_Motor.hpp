@@ -12,7 +12,7 @@ class DCMotor {
     public:
         int encoderAPin;
         int encoderBPin;
-        long encoderValue; // Encoder value
+        double encoderValue; // Encoder value
 
         DCMotor(int pwm, int dirA, int dirB, int encoderA, int encoderB);
         void setMotor(int analogSpeed);
