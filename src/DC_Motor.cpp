@@ -50,13 +50,39 @@ void DCMotor::setDirection(int dir) {
         digitalWrite(dirBPin, LOW);
     }
 }
-void DCMotor::encoderSubroutine() {
-    // This function will be called in the interrupt service routine
-    // to update the encoder value
-    if (digitalRead(encoderBPin)){
-        encoderValue ++;
+void DCMotor::encoderSubroutineA() {
+    if (digitalRead(encoderAPin)){
+        if (digitalRead(encoderBPin)){
+            encoderValue ++;
+        }
+        else{
+            encoderValue --;
+        }
     }
     else{ 
-        encoderValue --;
+        if (digitalRead(encoderBPin)){
+            encoderValue --;
+        }
+        else{
+            encoderValue ++;
+        }
+    }
+}
+void DCMotor::encoderSubroutineB() {
+    if (digitalRead(encoderBPin)){
+        if (digitalRead(encoderAPin)){
+            encoderValue ++;
+        }
+        else{
+            encoderValue --;
+        }
+    }
+    else{ 
+        if (digitalRead(encoderAPin)){
+            encoderValue --;
+        }
+        else{
+            encoderValue ++;
+        }
     }
 }

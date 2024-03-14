@@ -18,7 +18,8 @@ class DCMotor {
         void setMotor(int analogSpeed);
         void setSpeed(int analogSpeed);
         void setDirection(int dir);
-        void encoderSubroutine();
+        void encoderSubroutineA();
+        void encoderSubroutineB();
 };
 
 #endif // DCMOTOR_HPP
