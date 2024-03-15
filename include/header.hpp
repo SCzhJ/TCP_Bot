@@ -3,10 +3,10 @@
 #include "DC_Motor.hpp"
 #include "util.hpp"
 
-const double EPRA = 660;//转速比：1：(320-330)
-const double EPRB = 660;//转速比：1：(325-330)
-const double EPRC = 660;//转速比：1：(330-335)
-const double EPRD = 660;//转速比：1：(335-330)
+const double EPRA = 660;//转速比：1：660
+const double EPRB = 660;//转速比：1：660
+const double EPRC = 660;//转速比：1：660
+const double EPRD = 660;//转速比：1：660
 
 const int pwm1 = 12; const int dir1A = 34; const int dir1B = 35; const int encoder1A = 18; const int encoder1B = 31;
 const int pwm2 = 8; const int dir2A = 37; const int dir2B = 36; const int encoder2A = 19; const int encoder2B = 38;
@@ -19,10 +19,36 @@ double eps1 = 0, eps2 = 0, eps3 = 0, eps4 = 0;// encoder count per second
 double eps1_fb = 0, eps2_fb = 0, eps3_fb = 0, eps4_fb = 0;// eps filtered feedback
 double power1 = 10, power2 = 10, power3 = 10, power4 = 10;
 
-MovingAverage filter1;MovingAverage filter2;MovingAverage filter3;MovingAverage filter4;
+MovingAverage filter1; MovingAverage filter2; MovingAverage filter3; MovingAverage filter4;
 
 DCMotor motor1(pwm1, dir1A, dir1B, encoder1A, encoder1B); DCMotor motor2(pwm2, dir2A, dir2B, encoder2A, encoder2B);
 DCMotor motor3(pwm3, dir3A, dir3B, encoder3A, encoder3B); DCMotor motor4(pwm4, dir4A, dir4B, encoder4A, encoder4B);
+
+
+// Sensors
+float LDRL_Prime, LDRL_Sense, LDRL_Calib;
+float LDRR_Prime, LDRR_Sense, LDRR_Calib;     
+int int_left, int_right;
+int LDRL_Pin = 57;
+int LDRR_Pin = 56;
+int Error = 3;
+int status;
+void setupLDR(){
+    LDRL_Prime=analogRead(LDRL_Pin);   
+    LDRR_Prime=analogRead(LDRR_Pin);   
+    delay(500);
+    LDRL_Calib=analogRead(LDRL_Pin);
+    LDRR_Calib=analogRead(LDRR_Pin);
+
+    LDRL_Sense=(LDRL_Prime-LDRL_Calib)/100; //sensitivity
+    LDRR_Sense=(LDRR_Prime-LDRR_Calib)/100;
+}
+void updateLDR(){
+    int_left=(analogRead(LDRL_Pin)-LDRL_Calib)/LDRL_Sense;
+    int_right=(analogRead(LDRR_Pin)-LDRR_Calib)/LDRR_Sense;  
+}
+
+
 
 void encoder_subroutine_1A(){motor1.encoderSubroutineA();}
 void encoder_subroutine_2A(){motor2.encoderSubroutineA();}
@@ -32,3 +58,14 @@ void encoder_subroutine_1B(){motor1.encoderSubroutineB();}
 void encoder_subroutine_2B(){motor2.encoderSubroutineB();}
 void encoder_subroutine_3B(){motor3.encoderSubroutineB();}
 void encoder_subroutine_4B(){motor4.encoderSubroutineB();} 
+
+void attach_interrupts(){
+    attachInterrupt(digitalPinToInterrupt(encoder1A), encoder_subroutine_1A, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder2A), encoder_subroutine_2A, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder3A), encoder_subroutine_3A, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder4A), encoder_subroutine_4A, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder1B), encoder_subroutine_1B, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder2B), encoder_subroutine_2B, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder3B), encoder_subroutine_3B, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(encoder4B), encoder_subroutine_4B, CHANGE);
+}

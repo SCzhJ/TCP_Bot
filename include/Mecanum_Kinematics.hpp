@@ -13,7 +13,9 @@ private:
 public:
     MecanumDrive(double wheelRadius, double robotLength, double robotWidth);
     void calculateWheelSpeeds(double vx, double vy, double w);
+    void updateOdom(float wfl, float wfr, float wrl, float wrr, float dt);
     double wheelSpeeds[4];
+    float odom[3];
 };
 
 #endif
