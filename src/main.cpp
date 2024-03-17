@@ -7,9 +7,9 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include "Wire.h"
-#include <MPU6050_light.h>
+// #include <MPU6050_light.h>
 
-MPU6050 mpu(Wire);
+// MPU6050 mpu(Wire);
 
 const float DeltaTime = 0.04; // in s, CANT USE MILLIS(), CONFLICT WITH PID lib
 
@@ -27,7 +27,7 @@ MecanumDrive mecanumDrive(0.041, 0.105, 0.08);
 // ROS elements
 ros::NodeHandle nh;
 
-std_msgs::Float32 distR; ros::Publisher distRPub("distR", &distR);
+// std_msgs::Float32 distR; ros::Publisher distRPub("distR", &distR);
 std_msgs::Float32 distL; ros::Publisher distLPub("distL", &distL);
 
 std_msgs::Float32 x; std_msgs::Float32 y; std_msgs::Float32 theta;
@@ -47,14 +47,15 @@ void updateOdometry(); void updateIMU(); void measure_distance();
 void setup() {
     nh.initNode(); 
     nh.advertise(xPub); nh.advertise(yPub); nh.advertise(thetaPub);
-    // nh.advertise(distRPub); nh.advertise(distLPub);
+    // nh.advertise(distRPub); 
+    nh.advertise(distLPub);
     nh.subscribe(SubVel);
 
     attach_interrupts();
     motorPID1.SetMode(AUTOMATIC); motorPID2.SetMode(AUTOMATIC); motorPID3.SetMode(AUTOMATIC); motorPID4.SetMode(AUTOMATIC); 
     motorPID1.SetOutputLimits(-255, 255); motorPID2.SetOutputLimits(-255, 255); motorPID3.SetOutputLimits(-255, 255); motorPID4.SetOutputLimits(-255, 255);
 
-    pinMode(echoPinR, INPUT); pinMode(trigPinR, OUTPUT);
+    // pinMode(echoPinR, INPUT); pinMode(trigPinR, OUTPUT);
     pinMode(echoPinL, INPUT); pinMode(trigPinL, OUTPUT);
 }
 
@@ -66,15 +67,15 @@ void loop() {
     set_powers(); 
     // display_eps();
 
-    // measure_distance(); 
+    measure_distance(); 
     updateOdometry(); 
 
     // // ROS control
     publish_topics();
-    nh.spinOnce(); delay(1000*DeltaTime);
-    // for (int i=0; i<8; i++){
-    //     nh.spinOnce(); delay(120*DeltaTime);
-    // }
+    // nh.spinOnce(); delay(1000*DeltaTime);
+    for (int i=0; i<8; i++){
+        nh.spinOnce(); delay(120*DeltaTime);
+    }
 }
 
 /************************************************/
@@ -105,7 +106,7 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg){
         // else if (power3<0){motor3.setMotor(3);}
         // if (power4>0){motor4.setMotor(-3);}
         // else if (power4<0){motor4.setMotor(3);}
-        delay(10);
+        delay(5);
         motorPID1.outputSum = 0;
         motorPID2.outputSum = 0;
         motorPID3.outputSum = 0;
@@ -121,7 +122,8 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg){
 }
 void publish_topics(){
     xPub.publish(&x); yPub.publish(&y); thetaPub.publish(&theta);
-    // distRPub.publish(&distR); distLPub.publish(&distL);
+    // distRPub.publish(&distR); 
+    distLPub.publish(&distL);
 }
 void updateOdometry(){
     mecanumDrive.updateOdom(-eps1/EPRA * 2 * pi, eps2/EPRB * 2 * pi, -eps3/EPRC * 2 * pi, eps4/EPRD * 2 * pi, DeltaTime);
@@ -130,13 +132,13 @@ void updateOdometry(){
     theta.data = mecanumDrive.odom[2];
 }
 void measure_distance(){
-    digitalWrite(trigPinR, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPinR, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPinR, LOW);
-    durationR = pulseIn(echoPinR, HIGH);
-    distR.data = (durationR / 2.0) / 29.1; // dist in cm
+    // digitalWrite(trigPinR, LOW);
+    // delayMicroseconds(2);
+    // digitalWrite(trigPinR, HIGH);
+    // delayMicroseconds(10);
+    // digitalWrite(trigPinR, LOW);
+    // durationR = pulseIn(echoPinR, HIGH);
+    // distR.data = (durationR / 2.0) / 29.1; // dist in cm
 
     digitalWrite(trigPinL, LOW);
     delayMicroseconds(2);
