@@ -11,10 +11,9 @@
 
 MPU6050 mpu(Wire);
 
-double Ceps = 0.0; 
 const float DeltaTime = 0.04; // in s, CANT USE MILLIS(), CONFLICT WITH PID lib
-const float publish_dt = 0.1;
-float acc_t = 0;
+
+double Ceps = 0.0;  const float publish_dt = 0.1; float acc_t = 0;
 double set_eps1 = EPRA*Ceps, set_eps2 = EPRB*Ceps, set_eps3 = EPRC*Ceps, set_eps4 = EPRD*Ceps;
 float yaw_angle = 0;
 
@@ -28,8 +27,8 @@ MecanumDrive mecanumDrive(0.041, 0.105, 0.08);
 // ROS elements
 ros::NodeHandle nh;
 
-std_msgs::Float32 yaw;
-ros::Publisher yawPub("yaw", &yaw);
+std_msgs::Float32 distR; ros::Publisher distRPub("distR", &distR);
+std_msgs::Float32 distL; ros::Publisher distLPub("distL", &distL);
 
 std_msgs::Float32 x; std_msgs::Float32 y; std_msgs::Float32 theta;
 ros::Publisher xPub("x", &x); ros::Publisher yPub("y", &y); ros::Publisher thetaPub("theta", &theta);
@@ -39,37 +38,24 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg);
 ros::Subscriber<geometry_msgs::Twist> SubVel("cmd_vel", &cmd_vel_cb);
 
 // Functions
-void display_eps();
-void set_powers();
-void publish_topics();
-void updateOdometry();
-void updateIMU();
+void set_powers(); void publish_topics();
+void updateOdometry(); void updateIMU(); void measure_distance();
 
 /************************************************/
 /*                  Setups                      */
 /************************************************/
 void setup() {
-    // put your setup code here, to run once:
-    nh.initNode();
-    Serial.begin(115200);
-    Wire.begin();
-    byte status = mpu.begin();
-    Serial.print(F("MPU6050 status: "));
-    Serial.println(status);
-    while(status!=0){ }
-    Serial.println(F("Calculating offsets, do not move MPU6050"));
-    delay(1000);
-    mpu.calcOffsets(true,true);
-    Serial.println("Done!\n");
-
-    // nh.advertise(motor1_reading); nh.advertise(motor2_reading); nh.advertise(motor3_reading); nh.advertise(motor4_reading);
-    // nh.advertise(odomPub); 
+    nh.initNode(); 
     nh.advertise(xPub); nh.advertise(yPub); nh.advertise(thetaPub);
-    nh.advertise(yawPub);
+    // nh.advertise(distRPub); nh.advertise(distLPub);
     nh.subscribe(SubVel);
+
     attach_interrupts();
     motorPID1.SetMode(AUTOMATIC); motorPID2.SetMode(AUTOMATIC); motorPID3.SetMode(AUTOMATIC); motorPID4.SetMode(AUTOMATIC); 
     motorPID1.SetOutputLimits(-255, 255); motorPID2.SetOutputLimits(-255, 255); motorPID3.SetOutputLimits(-255, 255); motorPID4.SetOutputLimits(-255, 255);
+
+    pinMode(echoPinR, INPUT); pinMode(trigPinR, OUTPUT);
+    pinMode(echoPinL, INPUT); pinMode(trigPinL, OUTPUT);
 }
 
 /************************************************/
@@ -77,19 +63,18 @@ void setup() {
 /************************************************/
 void loop() {
     // Motor control
-    set_powers();
+    set_powers(); 
     // display_eps();
 
-    updateIMU();
-    updateOdometry();
+    // measure_distance(); 
+    updateOdometry(); 
 
-    // ROS control
+    // // ROS control
     publish_topics();
-    // delay(DeltaTime*1000);
-    for (int i=0; i<10; i++){
-        nh.spinOnce();
-        delay(100*DeltaTime);
-    }
+    nh.spinOnce(); delay(1000*DeltaTime);
+    // for (int i=0; i<8; i++){
+    //     nh.spinOnce(); delay(120*DeltaTime);
+    // }
 }
 
 /************************************************/
@@ -107,27 +92,19 @@ void set_powers(){
     motor1.encoderValue = 0;motor2.encoderValue = 0; motor3.encoderValue = 0;motor4.encoderValue = 0;
 }
 
-void display_eps(){
-    Serial.print(eps1_fb);Serial.print(" ");
-    Serial.print(eps2_fb);Serial.print(" ");
-    Serial.print(eps3_fb);Serial.print(" ");
-    Serial.println(eps4_fb);
-}
-// Use angular.x as halt message, if angular.x is 0, then halt
-// Else, not halt
 void cmd_vel_cb(const geometry_msgs::Twist& vel_msg){
     if (!(vel_msg.linear.x == prev_vel.linear.x && 
     vel_msg.linear.y == prev_vel.linear.y && 
     vel_msg.angular.z == prev_vel.angular.z) &&
     vel_msg.angular.x == 0){
-        if (power1>0){motor1.setMotor(-3);}
-        else if (power1<0){motor1.setMotor(3);}
-        if (power2>0){motor2.setMotor(-3);}
-        else if (power2<0){motor2.setMotor(3);}
-        if (power3>0){motor3.setMotor(-3);}
-        else if (power3<0){motor3.setMotor(3);}
-        if (power4>0){motor4.setMotor(-3);}
-        else if (power4<0){motor4.setMotor(3);}
+        // if (power1>0){motor1.setMotor(-3);}
+        // else if (power1<0){motor1.setMotor(3);}
+        // if (power2>0){motor2.setMotor(-3);}
+        // else if (power2<0){motor2.setMotor(3);}
+        // if (power3>0){motor3.setMotor(-3);}
+        // else if (power3<0){motor3.setMotor(3);}
+        // if (power4>0){motor4.setMotor(-3);}
+        // else if (power4<0){motor4.setMotor(3);}
         delay(10);
         motorPID1.outputSum = 0;
         motorPID2.outputSum = 0;
@@ -144,8 +121,7 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg){
 }
 void publish_topics(){
     xPub.publish(&x); yPub.publish(&y); thetaPub.publish(&theta);
-    nh.spinOnce();
-    yawPub.publish(&yaw);
+    // distRPub.publish(&distR); distLPub.publish(&distL);
 }
 void updateOdometry(){
     mecanumDrive.updateOdom(-eps1/EPRA * 2 * pi, eps2/EPRB * 2 * pi, -eps3/EPRC * 2 * pi, eps4/EPRD * 2 * pi, DeltaTime);
@@ -153,14 +129,20 @@ void updateOdometry(){
     y.data = mecanumDrive.odom[1];
     theta.data = mecanumDrive.odom[2];
 }
-void updateIMU(){
-    mpu.update();
-    yaw_angle = mpu.getAngleZ();
-    while (yaw_angle >= 360){
-        yaw_angle -= 360;
-    }
-    while (yaw_angle < 0){
-        yaw_angle += 360;
-    }
-    yaw.data = yaw_angle;
+void measure_distance(){
+    digitalWrite(trigPinR, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinR, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinR, LOW);
+    durationR = pulseIn(echoPinR, HIGH);
+    distR.data = (durationR / 2.0) / 29.1; // dist in cm
+
+    digitalWrite(trigPinL, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinL, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinL, LOW);
+    durationL = pulseIn(echoPinL, HIGH);
+    distL.data = (durationL / 2.0) / 29.1; // dist in cm
 }

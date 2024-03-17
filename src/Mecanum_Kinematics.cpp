@@ -22,4 +22,11 @@ void MecanumDrive::updateOdom(float wfl, float wfr, float wrl, float wrr, float 
     odom[0] += delta_x * dt * cos(odom[2]) - delta_y * dt * sin(odom[2]);
     odom[1] += delta_x * dt*  sin(odom[2]) + delta_y * dt * cos(odom[2]);
     odom[2] += delta_theta * dt;
+    while (odom[2] >= 360){
+        odom[2] -= 360;
+    }
+    while (odom[2] < 0){
+        odom[2] += 360;
+    }
+
 }
