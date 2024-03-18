@@ -27,12 +27,12 @@ DCMotor motor3(pwm3, dir3A, dir3B, encoder3A, encoder3B); DCMotor motor4(pwm4, d
 
 // Sensors
 // Ultrasonic
-const int echoPinR = 22;
-const int trigPinR = 24;
-long durationR;
-const int echoPinL = 28;
-const int trigPinL = 29;
+const int echoPinL = 22;
+const int trigPinL = 24;
 long durationL;
+const int echoPinR = 28;
+const int trigPinR = 29;
+long durationR;
 
 // LDR
 float LDRL_Prime, LDRL_Sense, LDRL_Calib;

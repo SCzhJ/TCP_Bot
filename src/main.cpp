@@ -27,7 +27,7 @@ MecanumDrive mecanumDrive(0.041, 0.105, 0.08);
 // ROS elements
 ros::NodeHandle nh;
 
-// std_msgs::Float32 distR; ros::Publisher distRPub("distR", &distR);
+std_msgs::Float32 distR; ros::Publisher distRPub("distR", &distR);
 std_msgs::Float32 distL; ros::Publisher distLPub("distL", &distL);
 
 std_msgs::Float32 x; std_msgs::Float32 y; std_msgs::Float32 theta;
@@ -38,8 +38,9 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg);
 ros::Subscriber<geometry_msgs::Twist> SubVel("cmd_vel", &cmd_vel_cb);
 
 // Functions
-void set_powers(); void publish_topics();
-void updateOdometry(); void updateIMU(); void measure_distance();
+void set_powers(); void publish_topics(); void updateOdometry();
+void measure_distance_right();
+void measure_distance_left();
 
 /************************************************/
 /*                  Setups                      */
@@ -47,7 +48,7 @@ void updateOdometry(); void updateIMU(); void measure_distance();
 void setup() {
     nh.initNode(); 
     nh.advertise(xPub); nh.advertise(yPub); nh.advertise(thetaPub);
-    // nh.advertise(distRPub); 
+    nh.advertise(distRPub); 
     nh.advertise(distLPub);
     nh.subscribe(SubVel);
 
@@ -55,7 +56,7 @@ void setup() {
     motorPID1.SetMode(AUTOMATIC); motorPID2.SetMode(AUTOMATIC); motorPID3.SetMode(AUTOMATIC); motorPID4.SetMode(AUTOMATIC); 
     motorPID1.SetOutputLimits(-255, 255); motorPID2.SetOutputLimits(-255, 255); motorPID3.SetOutputLimits(-255, 255); motorPID4.SetOutputLimits(-255, 255);
 
-    // pinMode(echoPinR, INPUT); pinMode(trigPinR, OUTPUT);
+    pinMode(echoPinR, INPUT); pinMode(trigPinR, OUTPUT);
     pinMode(echoPinL, INPUT); pinMode(trigPinL, OUTPUT);
 }
 
@@ -65,17 +66,14 @@ void setup() {
 void loop() {
     // Motor control
     set_powers(); 
-    // display_eps();
-
-    measure_distance(); 
     updateOdometry(); 
-
-    // // ROS control
+    // ROS control
     publish_topics();
     // nh.spinOnce(); delay(1000*DeltaTime);
-    for (int i=0; i<8; i++){
-        nh.spinOnce(); delay(120*DeltaTime);
-    }
+    measure_distance_left();
+    for (int i=0; i<4; i++){ nh.spinOnce(); delay(120*DeltaTime);}
+    measure_distance_right();
+    for (int i=0; i<4; i++){ nh.spinOnce(); delay(120*DeltaTime);}
 }
 
 /************************************************/
@@ -122,7 +120,7 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg){
 }
 void publish_topics(){
     xPub.publish(&x); yPub.publish(&y); thetaPub.publish(&theta);
-    // distRPub.publish(&distR); 
+    distRPub.publish(&distR); 
     distLPub.publish(&distL);
 }
 void updateOdometry(){
@@ -131,15 +129,17 @@ void updateOdometry(){
     y.data = mecanumDrive.odom[1];
     theta.data = mecanumDrive.odom[2];
 }
-void measure_distance(){
-    // digitalWrite(trigPinR, LOW);
-    // delayMicroseconds(2);
-    // digitalWrite(trigPinR, HIGH);
-    // delayMicroseconds(10);
-    // digitalWrite(trigPinR, LOW);
-    // durationR = pulseIn(echoPinR, HIGH);
-    // distR.data = (durationR / 2.0) / 29.1; // dist in cm
+void measure_distance_right(){
+    digitalWrite(trigPinR, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinR, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinR, LOW);
+    durationR = pulseIn(echoPinR, HIGH);
+    distR.data = (durationR / 2.0) / 29.1; // dist in cm
 
+}
+void measure_distance_left(){
     digitalWrite(trigPinL, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPinL, HIGH);
