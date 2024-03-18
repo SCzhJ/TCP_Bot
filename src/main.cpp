@@ -12,8 +12,10 @@
 // MPU6050 mpu(Wire);
 
 const float DeltaTime = 0.04; // in s, CANT USE MILLIS(), CONFLICT WITH PID lib
+unsigned long last_time = 0; unsigned long curr_time = 0;
+double dt = 0.04;
 
-double Ceps = 0.0;  const float publish_dt = 0.1; float acc_t = 0;
+double Ceps = 0.5;  const float publish_dt = 0.1; float acc_t = 0;
 double set_eps1 = EPRA*Ceps, set_eps2 = EPRB*Ceps, set_eps3 = EPRC*Ceps, set_eps4 = EPRD*Ceps;
 float yaw_angle = 0;
 
@@ -30,6 +32,9 @@ ros::NodeHandle nh;
 std_msgs::Float32 distR; ros::Publisher distRPub("distR", &distR);
 std_msgs::Float32 distL; ros::Publisher distLPub("distL", &distL);
 
+std_msgs::Float32 LDRR; ros::Publisher LDRRPub("LDRR", &LDRR);
+std_msgs::Float32 LDRL; ros::Publisher LDRLPub("LDRL", &LDRL);
+
 std_msgs::Float32 x; std_msgs::Float32 y; std_msgs::Float32 theta;
 ros::Publisher xPub("x", &x); ros::Publisher yPub("y", &y); ros::Publisher thetaPub("theta", &theta);
 
@@ -38,9 +43,9 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg);
 ros::Subscriber<geometry_msgs::Twist> SubVel("cmd_vel", &cmd_vel_cb);
 
 // Functions
-void set_powers(); void publish_topics(); void updateOdometry();
-void measure_distance_right();
-void measure_distance_left();
+void set_powers(double dt); void publish_topics(); 
+void updateOdometry(double dt); void updateLDR();
+void measure_distance_right(); void measure_distance_left();
 
 /************************************************/
 /*                  Setups                      */
@@ -48,8 +53,8 @@ void measure_distance_left();
 void setup() {
     nh.initNode(); 
     nh.advertise(xPub); nh.advertise(yPub); nh.advertise(thetaPub);
-    nh.advertise(distRPub); 
-    nh.advertise(distLPub);
+    nh.advertise(distRPub); nh.advertise(distLPub);
+    nh.advertise(LDRRPub); nh.advertise(LDRLPub);
     nh.subscribe(SubVel);
 
     attach_interrupts();
@@ -58,6 +63,9 @@ void setup() {
 
     pinMode(echoPinR, INPUT); pinMode(trigPinR, OUTPUT);
     pinMode(echoPinL, INPUT); pinMode(trigPinL, OUTPUT);
+    // setupLDR();
+    last_time = micros();
+    curr_time = micros();
 }
 
 /************************************************/
@@ -65,25 +73,34 @@ void setup() {
 /************************************************/
 void loop() {
     // Motor control
-    set_powers(); 
-    updateOdometry(); 
+    curr_time = micros(); 
+    dt = (curr_time - last_time)/1000000.0;
+    last_time = curr_time;
+    // Serial.println(dt);
+    // updateOdometry(dt); 
+    set_powers(dt); 
+    // updateLDR();
     // ROS control
-    publish_topics();
+    // publish_topics();
     // nh.spinOnce(); delay(1000*DeltaTime);
-    measure_distance_left();
-    for (int i=0; i<4; i++){ nh.spinOnce(); delay(120*DeltaTime);}
-    measure_distance_right();
-    for (int i=0; i<4; i++){ nh.spinOnce(); delay(120*DeltaTime);}
+    // measure_distance_left();
+    // for (int i=0; i<4; i++){ nh.spinOnce(); delay(80*DeltaTime);}
+    nh.spinOnce();
+    delay(320*DeltaTime);
+    // measure_distance_right();
+    // for (int i=0; i<4; i++){ nh.spinOnce(); delay(80*DeltaTime);}
+    nh.spinOnce();
+    delay(320*DeltaTime);
 }
 
 /************************************************/
 /*             Defined Functions                */
 /************************************************/
-void set_powers(){
-    eps1 = motor1.encoderValue / DeltaTime;
-    eps2 = motor2.encoderValue / DeltaTime;
-    eps3 = motor3.encoderValue / DeltaTime;
-    eps4 = motor4.encoderValue / DeltaTime;
+void set_powers(double dt){
+    eps1 = motor1.encoderValue / dt;
+    eps2 = motor2.encoderValue / dt;
+    eps3 = motor3.encoderValue / dt;
+    eps4 = motor4.encoderValue / dt;
 
     eps1_fb = filter1.addValue(-eps1); eps2_fb = filter2.addValue(eps2); eps3_fb = filter3.addValue(-eps3); eps4_fb = filter4.addValue(eps4);
     motorPID1.Compute();motorPID2.Compute();motorPID3.Compute();motorPID4.Compute();
@@ -120,11 +137,11 @@ void cmd_vel_cb(const geometry_msgs::Twist& vel_msg){
 }
 void publish_topics(){
     xPub.publish(&x); yPub.publish(&y); thetaPub.publish(&theta);
-    distRPub.publish(&distR); 
-    distLPub.publish(&distL);
+    distRPub.publish(&distR); distLPub.publish(&distL);
+    LDRRPub.publish(&LDRR); LDRLPub.publish(&LDRL);
 }
-void updateOdometry(){
-    mecanumDrive.updateOdom(-eps1/EPRA * 2 * pi, eps2/EPRB * 2 * pi, -eps3/EPRC * 2 * pi, eps4/EPRD * 2 * pi, DeltaTime);
+void updateOdometry(double dt){
+    mecanumDrive.updateOdom(-eps1/EPRA * 2 * pi, eps2/EPRB * 2 * pi, -eps3/EPRC * 2 * pi, eps4/EPRD * 2 * pi, dt);
     x.data = mecanumDrive.odom[0];
     y.data = mecanumDrive.odom[1];
     theta.data = mecanumDrive.odom[2];
@@ -147,4 +164,8 @@ void measure_distance_left(){
     digitalWrite(trigPinL, LOW);
     durationL = pulseIn(echoPinL, HIGH);
     distL.data = (durationL / 2.0) / 29.1; // dist in cm
+}
+void updateLDR(){
+    LDRL.data=analogRead(LDRL_Pin);
+    LDRR.data=analogRead(LDRR_Pin);
 }

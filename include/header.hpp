@@ -35,28 +35,14 @@ const int trigPinR = 29;
 long durationR;
 
 // LDR
-float LDRL_Prime, LDRL_Sense, LDRL_Calib;
-float LDRR_Prime, LDRR_Sense, LDRR_Calib;     
 int int_left, int_right;
-int LDRL_Pin = 57;
-int LDRR_Pin = 56;
-int Error = 3;
-int status;
+int LDRL_Pin = A7;
+int LDRR_Pin = A4;
+
 void setupLDR(){
-    LDRL_Prime=analogRead(LDRL_Pin);   
-    LDRR_Prime=analogRead(LDRR_Pin);   
-    delay(500);
-    LDRL_Calib=analogRead(LDRL_Pin);
-    LDRR_Calib=analogRead(LDRR_Pin);
-
-    LDRL_Sense=(LDRL_Prime-LDRL_Calib)/100; //sensitivity
-    LDRR_Sense=(LDRR_Prime-LDRR_Calib)/100;
+    pinMode(LDRL_Pin, INPUT);
+    pinMode(LDRR_Pin, INPUT);
 }
-void updateLDR(){
-    int_left=(analogRead(LDRL_Pin)-LDRL_Calib)/LDRL_Sense;
-    int_right=(analogRead(LDRR_Pin)-LDRR_Calib)/LDRR_Sense;  
-}
-
 
 
 void encoder_subroutine_1A(){motor1.encoderSubroutineA();}
