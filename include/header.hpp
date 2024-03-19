@@ -36,8 +36,8 @@ long durationR;
 
 // LDR
 int int_left, int_right;
-int LDRL_Pin = A7;
-int LDRR_Pin = A4;
+int LDRL_Pin = A1;
+int LDRR_Pin = A0;
 
 void setupLDR(){
     pinMode(LDRL_Pin, INPUT);
