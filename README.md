@@ -1,5 +1,7 @@
 # Trash Collection Patrol Bot
 
+Arduino code for controlling the chassis. Receives command from jetson nano.
+
 Code on Jetson Nano: https://github.com/SCzhJ/TCP_BOT_jetson
 
 **Participated 9th innoshow** https://innoacademy.engg.hku.hk/innoshow9/
